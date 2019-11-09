@@ -1,9 +1,12 @@
+#!/usr/bin/python
+
 import requests
 import base64
 import json
 import re
 from git import Repo
 import os
+import subprocess
 
 # 1. Reads from https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
 
@@ -20,31 +23,33 @@ for line in page.iter_lines():
             found = m.group(1)
             hashCommits.append(found)
 
-
 # A text file is used to track the hash commits that I've already downloaded
 finishedHashCommits = []
-current_dir = '/Users/alec/Desktop/MerkleX/CompilerScript'
+current_dir = '/Users/alec/Desktop/MerkleX/Binary-Compiler' #Change it so it's not hardcoded (FIXME)
 # current_ dir = os.getcwd()
 os.chdir(current_dir)
 if os.path.isfile("FinishedCompilers.txt"):
     with open("FinishedCompilers.txt", "r") as ifile:
-        line = fp.readLine()
+        line = ifile.readline()
         while line:
-            finishedHashCommits.append(line.stripe())
+            finishedHashCommits.append(line.strip())
+            line = ifile.readline()
 else:
     # Creates a new txt file if it doesn't exist
-    open(current_dir, 'FinishedCompilers.txt').close()
+    open('FinishedCompilers.txt', 'w').close()
 
 
-# Initialize the Repo
+
+
+
+# Initialize the Repo (Don't know if I need this)
 repo = Repo.init(current_dir).git
 index = Repo.init(current_dir).index
-
 
 # I shouldn't be cloning the whole solidity repo into my repo (FIXME)
 # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
 git_url = 'https://github.com/ethereum/solidity.git'
-repo_dir = '/Users/alec/Desktop/MerkleX/CompilerScript/Solidity'
+repo_dir = '/Users/alec/Desktop/MerkleX/CompilerScript/Solidity' #Change it so it's not hardcoded (FIXME)
 if not os.path.exists(repo_dir):
     os.makedirs(repo_dir)
 if not os.listdir(repo_dir):
@@ -59,7 +64,9 @@ for hash in hashCommits:
     if hash not in finishedHashCommits:
         repo.checkout(hash)
         # Build the binary
-
+        subprocess.run('mkdir build')
+        subprocess.run('cd build')
+        subprocess.run('cmake .. && make')
 
         # 3.Creates a git commit detailing the new binary being added
         PATH_OF_GIT_REPO = current_dir  # make sure .git folder is properly configured
