@@ -8,6 +8,10 @@ from git import Repo
 import os
 import subprocess
 import json
+import sys
+# Different Servers may need to download this
+from github_release import gh_release_create
+
 
 def compile_binaries(url):
     # Getting the hash commits from the github URL. This reads any new updates to txt file
@@ -27,11 +31,16 @@ def compile_binaries(url):
     current_dir = os.getcwd()
     if os.path.isfile("FinishedCompilers.txt"):
         with open('FinishedCompilers.txt') as json_file:
-            finishedHashCommits = json.load(json_file)
+            try:
+                finishedHashCommits = json.load(json_file)
+            except:
+                finishedHashCommits = {}
+                finishedHashCommits[get_platform()] = []
     else:
         # Creates a new txt file if it doesn't exist
         open('FinishedCompilers.txt', 'w').close()
         finishedHashCommits = {}
+        finishedHashCommits[get_platform()] = []
 
     # Should I be cloning the whole solidity file into my repo? (FIXME)
     # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
@@ -45,56 +54,65 @@ def compile_binaries(url):
     if not os.listdir(solidity_dir):
         Repo.clone_from(git_url, solidity_dir)
 
-    # # Initialize the Repo (Don't know if I need this)
-    repo = Repo(current_dir)
-
     # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
-    os.chdir(solidity_dir)
-    os.system('./scripts/install_deps.sh')
+    # os.chdir(solidity_dir)
+    # os.system('./scripts/install_deps.sh')
+
 
     # 2. Updates a local json file pointing to where the compiled artifact will be located when built and uploaded
     # Loop through each hash commmit and checkout to change the directory
 
-
     for hash in hashCommits:
-        if hash not in finishedHashCommits:
+        if (get_platform()+hash) not in finishedHashCommits.keys():
             # This checks out each specific hash commit
             if os.getcwd() != solidity_dir:
                 os.chdir(solidity_dir)
-            repo.git.checkout(hash)
+            repo = Repo(solidity_dir)
+            try:
+                repo.git.checkout(hash)
+            except:
+                print("couldn't checkout this hash!")
 
-            # Build the binary
-            new_path = repo_dir + '/build'
-            if not os.path.exists(new_path):
-                os.makedirs(build)
-            os.system('cd build')
-            os.system('cmake .. && make')
+            # #note: this will install binaries solc and soltest at usr/local/bin
+            # p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
+            # p.wait()
 
-            # # 3.Creates a git commit detailing the new binary being added
-            # PATH_OF_GIT_REPO = current_dir  # make sure .git folder is properly configured
-            # COMMIT_MESSAGE = "Finished building" + hash
-            # try:
-            #     repo = Repo(PATH_OF_GIT_REPO)
-            #     repo.git.add(update = True)
-            #     repo.index.commit(COMMIT_MESSAGE)
-            #     origin = repo.remote(name='origin')
-            #     # 4.Pushes to github
-            #     origin.push()
-            # except:
-            #     print('Some error occured while pushing the code')
+            # 3.Creates a git commit detailing the new binary being added
+            PATH_OF_GIT_REPO = current_dir  # make sure .git folder is properly configured
+            COMMIT_MESSAGE = "Finished building " + get_platform() + hash
+            try:
+                repo = Repo(PATH_OF_GIT_REPO)
+                repo.git.add(update = True)
+                repo.index.commit(COMMIT_MESSAGE)
+                origin = repo.remote(name='origin')
+                # 4.Pushes to github
+                origin.push()
+            except:
+                print('Some error occured while pushing the code')
+
+            # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
+            finishedHashCommits[get_platform()+hash] = "URL: dont know yet"
+
+            with open('FinishedCompilers.txt', 'w') as outfile:
+                json.dump(finishedHashCommits, outfile)
+
+
             # # 5. Uses the github api to create a new release and upload the binary to the release page
 
-            # After the binary is created, hash commit is written to FinishedCompilers.txt so it's not built again
+            # This is how you create a release
+            # gh_release_create("jcfr/sandbox ", "2.0.0", publish=True, name="Awesome 2.0", asset_pattern="dist/*")
 
-            # Change the Specs on this guy (FIXME)
-            finishedHashCommits[hash].append({
-                'name': 'Tim',
-                'operating system': 'apple.com',
-                'from': 'Alabama'
-            })
 
-            with open(current_dir + 'FinishedCompilers.txt', 'w') as outfile:
-                json.dump(finishedHashCommits, outfile)
+def get_platform():
+    platforms = {
+        'linux1' : 'Linux',
+        'linux2' : 'Linux',
+        'darwin' : 'OS X',
+        'win32' : 'Windows'
+    }
+    if sys.platform not in platforms:
+        return sys.platform
+    return platforms[sys.platform]
 
 if __name__ == '__main__':
     # 1. Reads from https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
