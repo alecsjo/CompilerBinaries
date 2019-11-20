@@ -12,10 +12,10 @@ import sys
 # Different Servers may need to download this
 from github_release import gh_release_create
 
-
 def compile_binaries(url):
     # Getting the hash commits from the github URL. This reads any new updates to txt file
     page = requests.get(url)
+    current_platform = get_platform()
 
     # Iterating through each line and storing the hash commits into hashCommits
     hashCommits = []
@@ -35,12 +35,12 @@ def compile_binaries(url):
                 finishedHashCommits = json.load(json_file)
             except:
                 finishedHashCommits = {}
-                finishedHashCommits[get_platform()] = []
+                finishedHashCommits[current_platform] = []
     else:
         # Creates a new txt file if it doesn't exist
         open('FinishedCompilers.txt', 'w').close()
         finishedHashCommits = {}
-        finishedHashCommits[get_platform()] = []
+        finishedHashCommits[current_platform] = []
 
     # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
     git_url = 'https://github.com/ethereum/solidity.git'
@@ -60,7 +60,7 @@ def compile_binaries(url):
     # 2. Updates a local json file pointing to where the compiled artifact will be located when built and uploaded
     # Loop through each hash commmit and checkout to change the directory
     for hash in hashCommits:
-        if (get_platform()+hash) not in finishedHashCommits.keys():
+        if (current_platform+hash) not in finishedHashCommits.keys():
             # This checks out each specific hash commit
             if os.getcwd() != solidity_dir:
                 os.chdir(solidity_dir)
@@ -75,13 +75,13 @@ def compile_binaries(url):
             p.wait()
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
-            finishedHashCommits[get_platform()+hash] = "URL: dont know yet"
+            finishedHashCommits[current_platform+hash] = "URL: dont know yet"
 
             with open('FinishedCompilers.txt', 'w') as outfile:
                 json.dump(finishedHashCommits, outfile)
 
             # 3.Creates a git commit detailing the new binary being added
-            COMMIT_MESSAGE = "Finished building " + get_platform() + hash
+            COMMIT_MESSAGE = "Finished building " + current_platform + hash
             try:
                 if os.getcwd() != current_dir:
                     os.chdir(current_dir)
@@ -94,9 +94,8 @@ def compile_binaries(url):
             except:
                 print('Some error occured while pushing the code')
 
-
             # # 5. Uses the github api to create a new release and upload the binary to the release page
-            # This is how you create a release
+            # Need to figure out how releases work (FIXME)
             gh_release_create("usr/local/bin", "2.0.0", publish=True, name="Awesome 2.0", asset_pattern="dist/*")
 
 def get_platform():
