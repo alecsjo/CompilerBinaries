@@ -80,12 +80,22 @@ def compile_binaries(url):
             # 3.Creates a git commit detailing the new binary being added
             COMMIT_MESSAGE = "Finished building " + get_platform() + hash
             try:
-                repo = Repo(current_dir)
-                repo.git.add(update = True)
-                repo.index.commit(COMMIT_MESSAGE)
-                origin = repo.remote(name='origin workBranch')
-                # 4.Pushes to github
-                origin.push()
+                # repo = Repo(current_dir)
+                # repo.index.add['FinishedCompilers.txt']
+                # repo.index.commit(COMMIT_MESSAGE)
+                # origin = repo.remote(name='origin')
+                # # 4.Pushes to github
+                # origin.push()
+                #Stage the file
+                if os.getcwd() != current_dir:
+                    os.chdir(current_dir)
+                subprocess.call('git add -A', shell = True)
+
+                # Add your commit
+                subprocess.call('git commit -m "'+ COMMIT_MESSAGE +'"', shell = True)
+
+                #Push the new or update files
+                subprocess.call('git push origin workBranch', shell = True)
             except:
                 print('Some error occured while pushing the code')
 
