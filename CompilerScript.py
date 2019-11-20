@@ -9,15 +9,21 @@ import os
 import subprocess
 import json
 import sys
-# Different Servers may need to download this
 from github_release import gh_release_create
+
+if __name__ == '__main__':
+    # 1. Reads from https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
+    url = 'https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/bin/list.txt'
+    compile_binaries(url)
 
 def compile_binaries(url):
     # Getting the hash commits from the github URL. This reads any new updates to txt file
     page = requests.get(url)
+    # Gets the Operating System of the computer you're running on
     current_platform = get_platform()
+    current_dir = os.getcwd()
 
-    # Iterating through each line and storing the hash commits into hashCommits
+    # Iterating through each line from github URL. Parses the hash commits and inputs into hashCommits
     hashCommits = []
     for line in page.iter_lines():
         if line:
@@ -26,9 +32,8 @@ def compile_binaries(url):
                 found = m.group(1)
                 hashCommits.append(found)
 
-    # A text file is used to track the hash commits that I've already downloaded
-    finishedHashCommits = []
-    current_dir = os.getcwd()
+    # A JSON text file is used to track the hash commits that I've already downloaded
+    # The JSON contains a dictionary that currently holds the Operating System + Hash commit as the key, and release URL as the value
     if os.path.isfile("FinishedCompilers.txt"):
         with open('FinishedCompilers.txt') as json_file:
             try:
@@ -37,7 +42,7 @@ def compile_binaries(url):
                 finishedHashCommits = {}
                 finishedHashCommits[current_platform] = []
     else:
-        # Creates a new txt file if it doesn't exist
+        # Creates a new JSON text file if it doesn't exist
         open('FinishedCompilers.txt', 'w').close()
         finishedHashCommits = {}
         finishedHashCommits[current_platform] = []
@@ -49,7 +54,7 @@ def compile_binaries(url):
     # Checks whether the Solidity Folder exists
     if not os.path.exists(solidity_dir):
         os.makedirs(solidity_dir)
-    # Checks whether it's been cloned/empty
+    # Checks whether it's already been cloned/empty
     if not os.listdir(solidity_dir):
         Repo.clone_from(git_url, solidity_dir)
 
@@ -57,25 +62,24 @@ def compile_binaries(url):
     p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
     p.wait()
 
-    # 2. Updates a local json file pointing to where the compiled artifact will be located when built and uploaded
-    # Loop through each hash commmit and checkout to change the directory
+    # 2. Updates a local JSON file pointing to where the compiled artifact will be located when built and uploaded
+    # Loops through each hash commmit and checkout to change the directory
     for hash in hashCommits:
+        # Checks if the current hash commit has already been compiled
         if (current_platform+hash) not in finishedHashCommits.keys():
             # This checks out each specific hash commit
-            if os.getcwd() != solidity_dir:
-                os.chdir(solidity_dir)
             try:
                 repo = Repo(solidity_dir)
                 repo.git.checkout(hash)
             except:
-                print("couldn't checkout this hash!")
+                print("couldn't checkout this hash:" + hash)
 
-            #note: this will install binaries solc and soltest at usr/local/bin
+            #Note: this will install binaries solc and soltest at usr/local/bin
             p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
             p.wait()
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
-            finishedHashCommits[current_platform+hash] = "URL: dont know yet"
+            finishedHashCommits[current_platform+hash] = "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
 
             with open('FinishedCompilers.txt', 'w') as outfile:
                 json.dump(finishedHashCommits, outfile)
@@ -85,19 +89,20 @@ def compile_binaries(url):
             try:
                 if os.getcwd() != current_dir:
                     os.chdir(current_dir)
-                #Stage the file
+                # Stage the file
                 subprocess.call('git add -A', shell = True)
                 # Add your commit
                 subprocess.call('git commit -m "'+ COMMIT_MESSAGE +'"', shell = True)
-                #Push the new or update files
+                # Push the new or update files
                 subprocess.call('git push origin workBranch', shell = True)
             except:
                 print('Some error occured while pushing the code')
 
-            # # 5. Uses the github api to create a new release and upload the binary to the release page
-            # Need to figure out how releases work (FIXME)
-            gh_release_create("usr/local/bin", "2.0.0", publish=True, name="Awesome 2.0", asset_pattern="dist/*")
+            # 5. Uses the github api to create a new release and upload the binary to the release page
+            # Github only takes ZIP files, so I need to zip the binary first before
+            gh_release_create(current_platform + hash, "2.0.0", publish=True, name=(current_platform + hash), asset_pattern="usr/local/bin/solc")
 
+# This function gets the Operating System of the current computer
 def get_platform():
     platforms = {
         'linux1' : 'Linux',
@@ -108,8 +113,3 @@ def get_platform():
     if sys.platform not in platforms:
         return sys.platform
     return platforms[sys.platform]
-
-if __name__ == '__main__':
-    # 1. Reads from https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
-    url = 'https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/bin/list.txt'
-    compile_binaries(url)
