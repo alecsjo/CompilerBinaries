@@ -67,21 +67,20 @@ def compile_binaries(url):
             # This checks out each specific hash commit
             if os.getcwd() != solidity_dir:
                 os.chdir(solidity_dir)
-            repo = Repo(solidity_dir)
-            try:
-                repo.git.checkout(hash)
-            except:
-                print("couldn't checkout this hash!")
+            # try:
+            #     repo = Repo(solidity_dir)
+            #     repo.git.checkout(hash)
+            # except:
+            #     print("couldn't checkout this hash!")
 
             # #note: this will install binaries solc and soltest at usr/local/bin
             # p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
             # p.wait()
 
             # 3.Creates a git commit detailing the new binary being added
-            PATH_OF_GIT_REPO = current_dir  # make sure .git folder is properly configured
             COMMIT_MESSAGE = "Finished building " + get_platform() + hash
             try:
-                repo = Repo(PATH_OF_GIT_REPO)
+                repo = Repo(current_dir)
                 repo.git.add(update = True)
                 repo.index.commit(COMMIT_MESSAGE)
                 origin = repo.remote(name='origin workBranch')
