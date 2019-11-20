@@ -42,7 +42,6 @@ def compile_binaries(url):
         finishedHashCommits = {}
         finishedHashCommits[get_platform()] = []
 
-    # Should I be cloning the whole solidity file into my repo? (FIXME)
     # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
     git_url = 'https://github.com/ethereum/solidity.git'
     solidity_dir = current_dir + '/Solidity'
@@ -55,49 +54,25 @@ def compile_binaries(url):
         Repo.clone_from(git_url, solidity_dir)
 
     # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
-    # os.chdir(solidity_dir)
-    # os.system('./scripts/install_deps.sh')
-
+    p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
+    p.wait()
 
     # 2. Updates a local json file pointing to where the compiled artifact will be located when built and uploaded
     # Loop through each hash commmit and checkout to change the directory
-
     for hash in hashCommits:
         if (get_platform()+hash) not in finishedHashCommits.keys():
             # This checks out each specific hash commit
             if os.getcwd() != solidity_dir:
                 os.chdir(solidity_dir)
-            # try:
-            #     repo = Repo(solidity_dir)
-            #     repo.git.checkout(hash)
-            # except:
-            #     print("couldn't checkout this hash!")
-
-            # #note: this will install binaries solc and soltest at usr/local/bin
-            # p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
-            # p.wait()
-
-            # 3.Creates a git commit detailing the new binary being added
-            COMMIT_MESSAGE = "Finished building " + get_platform() + hash
             try:
-                # repo = Repo(current_dir)
-                # repo.index.add['FinishedCompilers.txt']
-                # repo.index.commit(COMMIT_MESSAGE)
-                # origin = repo.remote(name='origin')
-                # # 4.Pushes to github
-                # origin.push()
-                #Stage the file
-                if os.getcwd() != current_dir:
-                    os.chdir(current_dir)
-                subprocess.call('git add -A', shell = True)
-
-                # Add your commit
-                subprocess.call('git commit -m "'+ COMMIT_MESSAGE +'"', shell = True)
-
-                #Push the new or update files
-                subprocess.call('git push origin workBranch', shell = True)
+                repo = Repo(solidity_dir)
+                repo.git.checkout(hash)
             except:
-                print('Some error occured while pushing the code')
+                print("couldn't checkout this hash!")
+
+            #note: this will install binaries solc and soltest at usr/local/bin
+            p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
+            p.wait()
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
             finishedHashCommits[get_platform()+hash] = "URL: dont know yet"
@@ -105,12 +80,24 @@ def compile_binaries(url):
             with open('FinishedCompilers.txt', 'w') as outfile:
                 json.dump(finishedHashCommits, outfile)
 
+            # 3.Creates a git commit detailing the new binary being added
+            COMMIT_MESSAGE = "Finished building " + get_platform() + hash
+            try:
+                if os.getcwd() != current_dir:
+                    os.chdir(current_dir)
+                #Stage the file
+                subprocess.call('git add -A', shell = True)
+                # Add your commit
+                subprocess.call('git commit -m "'+ COMMIT_MESSAGE +'"', shell = True)
+                #Push the new or update files
+                subprocess.call('git push origin workBranch', shell = True)
+            except:
+                print('Some error occured while pushing the code')
+
 
             # # 5. Uses the github api to create a new release and upload the binary to the release page
-
             # This is how you create a release
-            # gh_release_create("jcfr/sandbox ", "2.0.0", publish=True, name="Awesome 2.0", asset_pattern="dist/*")
-
+            gh_release_create("usr/local/bin", "2.0.0", publish=True, name="Awesome 2.0", asset_pattern="dist/*")
 
 def get_platform():
     platforms = {
