@@ -84,7 +84,7 @@ def compile_binaries(url):
                 repo = Repo(PATH_OF_GIT_REPO)
                 repo.git.add(update = True)
                 repo.index.commit(COMMIT_MESSAGE)
-                origin = repo.remote(name='origin')
+                origin = repo.remote(name='origin workBranch')
                 # 4.Pushes to github
                 origin.push()
             except:
