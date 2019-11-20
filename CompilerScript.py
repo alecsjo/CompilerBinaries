@@ -26,43 +26,43 @@ def compile_binaries(url):
     finishedHashCommits = []
     current_dir = os.getcwd()
     if os.path.isfile("FinishedCompilers.txt"):
-        with open("FinishedCompilers.txt", "r") as ifile:
-            line = ifile.readline()
-            while line:
-                finishedHashCommits.append(line.strip())
-                line = ifile.readline()
+        with open('FinishedCompilers.txt') as json_file:
+            finishedHashCommits = json.load(json_file)
     else:
         # Creates a new txt file if it doesn't exist
         open('FinishedCompilers.txt', 'w').close()
+        finishedHashCommits = {}
 
     # Should I be cloning the whole solidity file into my repo? (FIXME)
     # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
     git_url = 'https://github.com/ethereum/solidity.git'
-    repo_dir = current_dir + '/Solidity'
+    solidity_dir = current_dir + '/Solidity'
 
     # Checks whether the Solidity Folder exists
-    if not os.path.exists(repo_dir):
-        os.makedirs(repo_dir)
+    if not os.path.exists(solidity_dir):
+        os.makedirs(solidity_dir)
     # Checks whether it's been cloned/empty
-    if not os.listdir(repo_dir):
-        Repo.clone_from(git_url, repo_dir)
+    if not os.listdir(solidity_dir):
+        Repo.clone_from(git_url, solidity_dir)
 
     # # Initialize the Repo (Don't know if I need this)
     repo = Repo(current_dir)
 
     # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
-    os.system('cd Solidity')
+    os.chdir(solidity_dir)
     os.system('./scripts/install_deps.sh')
 
     # 2. Updates a local json file pointing to where the compiled artifact will be located when built and uploaded
     # Loop through each hash commmit and checkout to change the directory
+
+
     for hash in hashCommits:
         if hash not in finishedHashCommits:
             # This checks out each specific hash commit
-            if os.getcwd() != repo_dir:
-                os.system('cd Solidity')
+            if os.getcwd() != solidity_dir:
+                os.chdir(solidity_dir)
             repo.git.checkout(hash)
-    
+
             # Build the binary
             new_path = repo_dir + '/build'
             if not os.path.exists(new_path):
@@ -85,9 +85,16 @@ def compile_binaries(url):
             # # 5. Uses the github api to create a new release and upload the binary to the release page
 
             # After the binary is created, hash commit is written to FinishedCompilers.txt so it's not built again
-            os.system('cd ..')
-            with open('FinishedCompilers.txt', 'w') as f:
-                f.write(hash + '\n')
+
+            # Change the Specs on this guy (FIXME)
+            finishedHashCommits[hash].append({
+                'name': 'Tim',
+                'operating system': 'apple.com',
+                'from': 'Alabama'
+            })
+
+            with open(current_dir + 'FinishedCompilers.txt', 'w') as outfile:
+                json.dump(finishedHashCommits, outfile)
 
 if __name__ == '__main__':
     # 1. Reads from https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
