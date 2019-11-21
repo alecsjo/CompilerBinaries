@@ -24,13 +24,15 @@ def compile_binaries(url):
     current_dir = os.getcwd()
 
     # Iterating through each line from github URL. Parses the hash commits and inputs into hashCommits
-    hashCommits = []
+    hashCommits = {}
     for line in page.iter_lines():
         if line:
-            m = re.search('commit.(.+?).js', line)
-            if m:
-                found = m.group(1)
-                hashCommits.append(found)
+            hash = re.search('commit.(.+?).js', line)
+            version = re.search('soljson-(.+?).+commit', line)
+            if hash and version:
+                hash_found = hash.group(1)
+                version_found = version.group(1)
+                hashCommits[hash_found] = version_found
 
     # A JSON text file is used to track the hash commits that I've already downloaded
     # The JSON contains a dictionary that currently holds the Operating System + Hash commit as the key, and release URL as the value
@@ -40,12 +42,10 @@ def compile_binaries(url):
                 finishedHashCommits = json.load(json_file)
             except:
                 finishedHashCommits = {}
-                finishedHashCommits[current_platform] = []
     else:
         # Creates a new JSON text file if it doesn't exist
         open('FinishedCompilers.txt', 'w').close()
         finishedHashCommits = {}
-        finishedHashCommits[current_platform] = []
 
     # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
     git_url = 'https://github.com/ethereum/solidity.git'
@@ -64,9 +64,9 @@ def compile_binaries(url):
 
     # 2. Updates a local JSON file pointing to where the compiled artifact will be located when built and uploaded
     # Loops through each hash commmit and checkout to change the directory
-    for hash in hashCommits:
+    for hash, version in hashCommits:
         # Checks if the current hash commit has already been compiled
-        if (current_platform+hash) not in finishedHashCommits.keys():
+        if (hash not in finishedHashCommits.keys()) or (current_platform not in finishedHashCommits[hash][targets].keys()):
             # This checks out each specific hash commit
             try:
                 repo = Repo(solidity_dir)
@@ -79,7 +79,18 @@ def compile_binaries(url):
             p.wait()
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
-            finishedHashCommits[current_platform+hash] = "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
+            if hash not in finishedHashCommits.keys():
+                finishedHashCommits{hash} = {
+                    "version": version,
+                    "full_version": version + "-" + hash,
+                    "targets": {
+                        current_platform: "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
+                    }
+                }
+            else:
+                finishedHashCommits[hash][targets].append(
+                    current_platform: "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
+                )
 
             with open('FinishedCompilers.txt', 'w') as outfile:
                 json.dump(finishedHashCommits, outfile)
