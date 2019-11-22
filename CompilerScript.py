@@ -11,11 +11,6 @@ import json
 import sys
 from github_release import gh_release_create
 
-if __name__ == '__main__':
-    # 1. Reads from https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
-    url = 'https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/bin/list.txt'
-    compile_binaries(url)
-
 def compile_binaries(url):
     # Getting the hash commits from the github URL. This reads any new updates to txt file
     page = requests.get(url)
@@ -59,12 +54,12 @@ def compile_binaries(url):
         Repo.clone_from(git_url, solidity_dir)
 
     # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
-    p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
-    p.wait()
+    # p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
+    # p.wait()
 
     # 2. Updates a local JSON file pointing to where the compiled artifact will be located when built and uploaded
     # Loops through each hash commmit and checkout to change the directory
-    for hash, version in hashCommits:
+    for hash in hashCommits:
         # Checks if the current hash commit has already been compiled
         if (hash not in finishedHashCommits.keys()) or (current_platform not in finishedHashCommits[hash][targets].keys()):
             # This checks out each specific hash commit
@@ -80,17 +75,15 @@ def compile_binaries(url):
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
             if hash not in finishedHashCommits.keys():
-                finishedHashCommits{hash} = {
-                    "version": version,
-                    "full_version": version + "-" + hash,
+                finishedHashCommits[hash] = {
+                    "version": hashCommits[hash],
+                    "full_version": hashCommits[hash] + "-" + hash,
                     "targets": {
                         current_platform: "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
                     }
                 }
             else:
-                finishedHashCommits[hash][targets].append(
-                    current_platform: "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
-                )
+                finishedHashCommits[hash][targets][current_platform] = "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
 
             with open('FinishedCompilers.txt', 'w') as outfile:
                 json.dump(finishedHashCommits, outfile)
@@ -124,3 +117,8 @@ def get_platform():
     if sys.platform not in platforms:
         return sys.platform
     return platforms[sys.platform]
+
+if __name__ == '__main__':
+    # 1. Reads from https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
+    url = 'https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/bin/list.txt'
+    compile_binaries(url)
