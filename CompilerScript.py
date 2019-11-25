@@ -52,26 +52,38 @@ def compile_binaries(url):
     # Checks whether it's already been cloned/empty
     if not os.listdir(solidity_dir):
         Repo.clone_from(git_url, solidity_dir)
+    try:
+        gh_release_create("alecsjo/Binary-Compiler", "2.0.0", publish=True, name="mac" + "219212912", asset_pattern="usr/local/bin/solc")
+        print('successful')
+    except:
+        print("error")
 
     # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
     # p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
     # p.wait()
 
+    # Need this to create/upload releases
+    p2 = subprocess.Popen(['pip install githubrelease'], cwd=current_dir)
+    p2.wait()
+
     # 2. Updates a local JSON file pointing to where the compiled artifact will be located when built and uploaded
     # Loops through each hash commmit and checkout to change the directory
-    for hash in hashCommits:
+    for hash in hashCommits.keys():
         # Checks if the current hash commit has already been compiled
-        if (hash not in finishedHashCommits.keys()) or (current_platform not in finishedHashCommits[hash][targets].keys()):
+        if (hash not in finishedHashCommits.keys()) or (current_platform not in finishedHashCommits[hash]['targets'].keys()):
             # This checks out each specific hash commit
             try:
-                repo = Repo(solidity_dir)
-                repo.git.checkout(hash)
+                # repo = Repo(solidity_dir)
+                # repo.git.checkout(hash)
+                os.chdir(solidity_dir)
+                subprocess.call('git checkout -f ' + hash, shell = True)
             except:
                 print("couldn't checkout this hash:" + hash)
+                continue
 
             #Note: this will install binaries solc and soltest at usr/local/bin
-            p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
-            p.wait()
+            # p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
+            # p.wait()
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
             if hash not in finishedHashCommits.keys():
@@ -104,14 +116,19 @@ def compile_binaries(url):
 
             # 5. Uses the github api to create a new release and upload the binary to the release page
             # Github only takes ZIP files, so I need to zip the binary first before
-            gh_release_create(current_platform + hash, "2.0.0", publish=True, name=(current_platform + hash), asset_pattern="usr/local/bin/solc")
+            try:
+                p = subprocess.Popen(['githubrelease --github-token 676a081a6073306b26e618e5f6025f1bbe597cee release alecsjo/Binary-Compiler create', release number, '--publish --name', current_platform + hash, 'filename'], cwd=current_dir)
+                p.wait()
+            except:
+                print('Some error occured while creating the release')
 
 # This function gets the Operating System of the current computer
-def get_platform():
+def get_platform
+():
     platforms = {
         'linux1' : 'Linux',
         'linux2' : 'Linux',
-        'darwin' : 'OS X',
+        'darwin' : 'OSX',
         'win32' : 'Windows'
     }
     if sys.platform not in platforms:

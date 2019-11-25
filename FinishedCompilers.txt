@@ -1,1 +1,0 @@
-{"240c79e6": {"full_version": "v-240c79e6", "version": "v", "targets": {"OS X": "https://github.com/alecsjo/Binary-Compiler/releases/tag/OS X240c79e6"}}, "OS Xe383b2bb": "URL: dont know yet", "OS X": [], "OS X6a993152": "URL: dont know yet", "OS X79af19db": "URL: dont know yet"}
