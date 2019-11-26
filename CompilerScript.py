@@ -19,6 +19,7 @@ def compile_binaries(url):
     # Gets the Operating System of the computer you're running on
     current_platform = get_platform()
     current_dir = os.getcwd()
+    os.chdir(current_dir)
 
     # Iterating through each line from github URL. Parses the hash commits and inputs into hashCommits
     hashCommits = {}
@@ -45,19 +46,23 @@ def compile_binaries(url):
         finishedHashCommits = {}
 
     # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
-    git_url = 'https://github.com/ethereum/solidity.git'
-    solidity_dir = current_dir + '/Solidity'
-
+    solidity_dir = current_dir + '/solidity'
     # Checks whether the Solidity Folder exists
     if not os.path.exists(solidity_dir):
-        os.makedirs(solidity_dir)
-    # Checks whether it's already been cloned/empty
-    if not os.listdir(solidity_dir):
-        Repo.clone_from(git_url, solidity_dir)
+        try:
+            os.system('git clone --recursive https://github.com/ethereum/solidity.git')
+        except:
+            print("couldn't clone the solidity repository!")
 
-    # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
-    p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir).communicate()
-    p.wait()
+    # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
+    try:
+        if current_platform in {'OSX','Linux'}:
+            os.system('./scripts/install_deps.sh')
+        else:
+            # This is for Windows
+            os.system('scripts\install_deps.bat')
+    except:
+        print("Couldn't download external dependencies")
 
     # Need this to create/upload releases
     subprocess.call('pip install githubrelease', shell = True)
@@ -69,8 +74,6 @@ def compile_binaries(url):
         if (hash not in finishedHashCommits.keys()) or (current_platform not in finishedHashCommits[hash]['targets'].keys()):
             # This checks out each specific hash commit
             try:
-                # repo = Repo(solidity_dir)
-                # repo.git.checkout(hash)
                 os.chdir(solidity_dir)
                 subprocess.call('git checkout -f ' + hash, shell = True)
             except:
@@ -80,38 +83,48 @@ def compile_binaries(url):
             # Command line script that builds the binary
             try:
                 #Note: this will install binaries solc and soltest at usr/local/bin
-                subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir).communicate()
+                if current_platform in {'OSX','Linux'}:
+                    os.chdir(solidity_dir)
+                    # os.system('./scripts/build.sh')
+                    cmd = subprocess.Popen(['./scripts/build.sh'])
+                    cmd.communicate()
+                else:
+                    # This is for Windows
+                    subprocess.Popen(['cmake --build . --config Release'], cwd=solidity_dir).communicate()
             except:
                 print("couldn't build binary for" + hash)
+                continue
 
-            # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
+            # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
+            solc_tag = 'solc-'+current_platform+'-'+hash
             if hash not in finishedHashCommits.keys():
                 finishedHashCommits[hash] = {
                     "version": hashCommits[hash],
                     "full_version": hashCommits[hash] + "-" + hash,
                     "targets": {
-                        current_platform: "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
+                        current_platform: "https://github.com/alecsjo/Binary-Compiler/releases/download/" + solc_tag + '/'+ solc_tag
                     }
                 }
             else:
-                finishedHashCommits[hash][targets][current_platform] = "https://github.com/alecsjo/Binary-Compiler/releases/tag/" + current_platform + hash
+                finishedHashCommits[hash][targets][current_platform] = "https://github.com/alecsjo/Binary-Compiler/releases/download/" + solc_tag + '/'+ solc_tag
 
             with open('FinishedCompilers.txt', 'w') as outfile:
                 json.dump(finishedHashCommits, outfile)
 
             # 3.Creates a git commit detailing the new binary being added
-            COMMIT_MESSAGE = "Finished building " + current_platform + hash
+            COMMIT_MESSAGE = "Finished building " + solc_tag
             try:
                 if os.getcwd() != current_dir:
                     os.chdir(current_dir)
                 # Stage the file
-                subprocess.call('git add -A', shell = True)
+                subprocess.call('git add FinishedCompilers.txt', shell = True)
                 # Add your commit
                 subprocess.call('git commit -m '+ COMMIT_MESSAGE, shell = True)
                 # Push the new or update files
                 subprocess.call('git push origin workBranch', shell = True)
             except:
                 print('Some error occured while pushing the code')
+                continue
 
             # 5. Uses the github api to create a new release and upload the binary to the release page
             try:
@@ -119,12 +132,15 @@ def compile_binaries(url):
                 src = '/usr/local/bin/solc'
                 dst = current_dir
                 shutil.copy(src, dst)
+                # Changing the name to have the platform and hash
+                os.rename('solc',solc_tag)
 
                 os.chdir(current_dir)
-                os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb"+"54293fee9de2cd"
-                gh_release_create("alecsjo/Binary-Compiler", "1.0.0", publish=True, name=current_platform+hash, asset_pattern="solc") #Change the version name
+                os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb"+ "54293fee9de2cd"
+                gh_release_create("alecsjo/Binary-Compiler", solc_tag, publish=True, name=solc_tag, asset_pattern=solc_tag) #Change the version name
             except:
                 print('Some error occured while creating the release')
+                continue
 
 # This function gets the Operating System of the current computer
 def get_platform():
