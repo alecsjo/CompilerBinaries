@@ -6,9 +6,11 @@ import json
 import re
 from git import Repo
 import os
+from os import path
 import subprocess
 import json
 import sys
+import shutil
 from github_release import gh_release_create
 
 def compile_binaries(url):
@@ -52,15 +54,11 @@ def compile_binaries(url):
     # Checks whether it's already been cloned/empty
     if not os.listdir(solidity_dir):
         Repo.clone_from(git_url, solidity_dir)
-    try:
-        gh_release_create("alecsjo/Binary-Compiler", "2.0.0", publish=True, name="mac" + "219212912", asset_pattern="usr/local/bin/solc")
-        print('successful')
-    except:
-        print("error")
 
-    # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
-    # p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
-    # p.wait()
+
+    # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
+    p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
+    p.wait()
 
     # Need this to create/upload releases
     p2 = subprocess.Popen(['pip install githubrelease'], cwd=current_dir)
@@ -82,8 +80,8 @@ def compile_binaries(url):
                 continue
 
             #Note: this will install binaries solc and soltest at usr/local/bin
-            # p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
-            # p.wait()
+            p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
+            p.wait()
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
             if hash not in finishedHashCommits.keys():
@@ -108,23 +106,28 @@ def compile_binaries(url):
                 # Stage the file
                 subprocess.call('git add -A', shell = True)
                 # Add your commit
-                subprocess.call('git commit -m "'+ COMMIT_MESSAGE +'"', shell = True)
+                subprocess.call('git commit -m '+ COMMIT_MESSAGE, shell = True)
                 # Push the new or update files
                 subprocess.call('git push origin workBranch', shell = True)
             except:
                 print('Some error occured while pushing the code')
 
+
             # 5. Uses the github api to create a new release and upload the binary to the release page
-            # Github only takes ZIP files, so I need to zip the binary first before
             try:
-                p = subprocess.Popen(['githubrelease --github-token 676a081a6073306b26e618e5f6025f1bbe597cee release alecsjo/Binary-Compiler create', release number, '--publish --name', current_platform + hash, 'filename'], cwd=current_dir)
-                p.wait()
+                # Moving the file into my Folder
+                src = '/usr/local/bin/solc'
+                dst = current_dir
+                shutil.copy(src, dst)
+
+                os.chdir(current_dir)
+                os.environ["GITHUB_TOKEN"] = "3bfb608fb56983492f7746d2160442a27ddbf15e"
+                gh_release_create("alecsjo/Binary-Compiler", "1.0.0", publish=True, name=current_platform+hash, asset_pattern="solc") #Change the version name
             except:
                 print('Some error occured while creating the release')
 
 # This function gets the Operating System of the current computer
-def get_platform
-():
+def get_platform():
     platforms = {
         'linux1' : 'Linux',
         'linux2' : 'Linux',
