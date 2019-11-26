@@ -55,14 +55,12 @@ def compile_binaries(url):
     if not os.listdir(solidity_dir):
         Repo.clone_from(git_url, solidity_dir)
 
-
-    # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
-    p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir)
+    # # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
+    p = subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir).communicate()
     p.wait()
 
     # Need this to create/upload releases
-    p2 = subprocess.Popen(['pip install githubrelease'], cwd=current_dir)
-    p2.wait()
+    subprocess.call('pip install githubrelease', shell = True)
 
     # 2. Updates a local JSON file pointing to where the compiled artifact will be located when built and uploaded
     # Loops through each hash commmit and checkout to change the directory
@@ -79,9 +77,12 @@ def compile_binaries(url):
                 print("couldn't checkout this hash:" + hash)
                 continue
 
-            #Note: this will install binaries solc and soltest at usr/local/bin
-            p = subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir)
-            p.wait()
+            # Command line script that builds the binary
+            try:
+                #Note: this will install binaries solc and soltest at usr/local/bin
+                subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir).communicate()
+            except:
+                print("couldn't build binary for" + hash)
 
             # After the binary is created, the operating system + hash commit is written to the JSON'd FinishedCompilers.txt so it's not built again
             if hash not in finishedHashCommits.keys():
@@ -112,7 +113,6 @@ def compile_binaries(url):
             except:
                 print('Some error occured while pushing the code')
 
-
             # 5. Uses the github api to create a new release and upload the binary to the release page
             try:
                 # Moving the file into my Folder
@@ -121,7 +121,7 @@ def compile_binaries(url):
                 shutil.copy(src, dst)
 
                 os.chdir(current_dir)
-                os.environ["GITHUB_TOKEN"] = "3bfb608fb56983492f7746d2160442a27ddbf15e"
+                os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb"+"54293fee9de2cd"
                 gh_release_create("alecsjo/Binary-Compiler", "1.0.0", publish=True, name=current_platform+hash, asset_pattern="solc") #Change the version name
             except:
                 print('Some error occured while creating the release')
