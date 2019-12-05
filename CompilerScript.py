@@ -4,7 +4,6 @@ import requests
 import base64
 import json
 import re
-from git import Repo
 import os
 from os import path
 import subprocess
@@ -16,6 +15,7 @@ from github_release import gh_release_create
 def compile_binaries(url):
     # Getting the hash commits from the github URL. This reads any new updates to txt file
     page = requests.get(url)
+
     # Gets the Operating System of the computer you're running on
     current_platform = get_platform()
     current_dir = os.getcwd()
@@ -25,8 +25,8 @@ def compile_binaries(url):
     hashCommits = {}
     for line in page.iter_lines():
         if line:
-            hash = re.search('commit.(.+?).js', line)
-            version = re.search('soljson-(.+?).+commit', line)
+            hash = re.search('commit.(.+?).js', line.decode('utf-8'))
+            version = re.search('soljson-(.+?).+commit', line.decode('utf-8'))
             if hash and version:
                 hash_found = hash.group(1)
                 version_found = version.group(1)
@@ -58,16 +58,14 @@ def compile_binaries(url):
     # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
     try:
         if current_platform in {'OSX','Linux'}:
-            os.chdir(solidity_dir)
-            os.system('./scripts/install_deps.sh')
+            subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir).communicate()
         else:
             # This is for Windows
-            os.system('scripts\install_deps.bat')
+            subprocess.Popen(['scripts\install_deps.bat'], cwd=solidity_dir).communicate()
     except:
         print("Couldn't download external dependencies")
 
     # Need this to create/upload releases
-    subprocess.call('pip install githubrelease', shell = True)
 
     # 2. Updates a local JSON file pointing to where the compiled artifact will be located when built and uploaded
     # Loops through each hash commmit and checkout to change the directory
@@ -78,6 +76,8 @@ def compile_binaries(url):
             try:
                 os.chdir(solidity_dir)
                 subprocess.call('git checkout -f ' + hash, shell = True)
+
+                print("CHECKPOINT 1 " + hash)
             except:
                 print("couldn't checkout this hash:" + hash)
                 continue
@@ -90,10 +90,12 @@ def compile_binaries(url):
                 else:
                     # This is for Windows
                     subprocess.Popen(['cmake --build . --config Release'], cwd=solidity_dir).communicate()
+                print("CHECKPOINT 2 " + hash)
             except:
                 print("couldn't build binary for" + hash)
                 continue
 
+            print("CHECKPOINT 3 " + hash)
             # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
             os.chdir(current_dir)
             solc_tag = 'solc-'+current_platform+'-'+hash
