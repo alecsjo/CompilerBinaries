@@ -45,6 +45,7 @@ def compile_binaries(url):
         open('FinishedCompilers.txt', 'w').close()
         finishedHashCommits = {}
 
+
     # Cloning the Solidity github repository if not already created and stores it into the Solidity Folder
     solidity_dir = current_dir + '/solidity'
     # Checks whether the Solidity Folder exists
@@ -57,6 +58,7 @@ def compile_binaries(url):
     # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
     try:
         if current_platform in {'OSX','Linux'}:
+            os.chdir(solidity_dir)
             os.system('./scripts/install_deps.sh')
         else:
             # This is for Windows
@@ -71,7 +73,7 @@ def compile_binaries(url):
     # Loops through each hash commmit and checkout to change the directory
     for hash in hashCommits.keys():
         # Checks if the current hash commit has already been compiled
-        if (hash not in finishedHashCommits.keys()) or (current_platform not in finishedHashCommits[hash]['targets'].keys()):
+        if (hash not in finishedHashCommits.keys()) or (current_platform not in finishedHashCommits[hash]["targets"].keys()):
             # This checks out each specific hash commit
             try:
                 os.chdir(solidity_dir)
@@ -84,10 +86,7 @@ def compile_binaries(url):
             try:
                 #Note: this will install binaries solc and soltest at usr/local/bin
                 if current_platform in {'OSX','Linux'}:
-                    os.chdir(solidity_dir)
-                    # os.system('./scripts/build.sh')
-                    cmd = subprocess.Popen(['./scripts/build.sh'])
-                    cmd.communicate()
+                    subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir).communicate()
                 else:
                     # This is for Windows
                     subprocess.Popen(['cmake --build . --config Release'], cwd=solidity_dir).communicate()
@@ -96,6 +95,7 @@ def compile_binaries(url):
                 continue
 
             # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
+            os.chdir(current_dir)
             solc_tag = 'solc-'+current_platform+'-'+hash
             if hash not in finishedHashCommits.keys():
                 finishedHashCommits[hash] = {
@@ -106,20 +106,18 @@ def compile_binaries(url):
                     }
                 }
             else:
-                finishedHashCommits[hash][targets][current_platform] = "https://github.com/alecsjo/Binary-Compiler/releases/download/" + solc_tag + '/'+ solc_tag
+                finishedHashCommits[hash]['targets'][current_platform] = "https://github.com/alecsjo/Binary-Compiler/releases/download/" + solc_tag + '/'+ solc_tag
 
-            with open('FinishedCompilers.txt', 'w') as outfile:
-                json.dump(finishedHashCommits, outfile)
-
+            with open('FinishedCompilers.txt', 'w') as f:
+                json.dump(finishedHashCommits, f, ensure_ascii=False)
             # 3.Creates a git commit detailing the new binary being added
-            COMMIT_MESSAGE = "Finished building " + solc_tag
+            COMMIT_MESSAGE = '"Finished building ' + solc_tag + "'"
             try:
-                if os.getcwd() != current_dir:
-                    os.chdir(current_dir)
+                os.chdir(current_dir)
                 # Stage the file
                 subprocess.call('git add FinishedCompilers.txt', shell = True)
                 # Add your commit
-                subprocess.call('git commit -m '+ COMMIT_MESSAGE, shell = True)
+                subprocess.call('git commit -m "done"', shell = True)
                 # Push the new or update files
                 subprocess.call('git push origin workBranch', shell = True)
             except:
@@ -140,7 +138,6 @@ def compile_binaries(url):
                 gh_release_create("alecsjo/Binary-Compiler", solc_tag, publish=True, name=solc_tag, asset_pattern=solc_tag) #Change the version name
             except:
                 print('Some error occured while creating the release')
-                continue
 
 # This function gets the Operating System of the current computer
 def get_platform():
