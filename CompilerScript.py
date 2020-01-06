@@ -59,11 +59,12 @@ def compile_binaries(url):
 
     # Helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
     try:
-        if current_platform in {'win32','cygwin','msys'}:
+        if current_platform in {'linux','darwin'}:
+            subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir).communicate()
+        else:
             # This is for Windows
             subprocess.Popen(['scripts\install_deps.bat'], cwd=solidity_dir).communicate()
-        else:
-            subprocess.Popen(['./scripts/install_deps.sh'], cwd=solidity_dir).communicate()
+
     except:
         print("Couldn't download external dependencies")
 
@@ -89,11 +90,11 @@ def compile_binaries(url):
         # Command line script that builds the binary
         try:
             #Note: this will install binaries solc and soltest at usr/local/bin
-            if current_platform in {'win32','cygwin','msys'}:
-                # This is for Windows
-                subprocess.Popen(['cmake --build . --config Release'], cwd=solidity_dir).communicate()
-            else:
+            if current_platform in {'linux','darwin'}:
                 subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir).communicate()
+            else:
+                # This is for Windows
+                subprocess.Popen(['cmake --build . --config Releasecmake --build . --config Release'], cwd=solidity_dir).communicate()
             print("CHECKPOINT 2 " + hash)
         except:
             print("couldn't build binary for" + hash)
