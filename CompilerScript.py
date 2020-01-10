@@ -10,14 +10,13 @@ import subprocess
 import json
 import sys
 import shutil
-from github_release import gh_release_create
 
 def compile_binaries(url):
     # Getting the hash commits from the github URL. This reads any new updates to txt file
     page = requests.get(url)
 
     # Gets the Operating System of the computer you're running on
-    current_platform = sys.platform
+    current_platform = sys.platform()
     print(current_platform)
     current_dir = os.getcwd()
     os.chdir(current_dir)
@@ -101,7 +100,7 @@ def compile_binaries(url):
             continue
 
         print("CHECKPOINT 3 " + hash)
-        # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
+        After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
         os.chdir(current_dir)
         solc_tag = 'solc-'+current_platform+'-'+hash
         if hash not in finishedHashCommits.keys():
@@ -131,17 +130,19 @@ def compile_binaries(url):
             print('Some error occured while pushing the code')
             continue
 
-        # 5. Uses the github api to create a new release and upload the binary to the release page
+        5. Uses the github api to create a new release and upload the binary to the release page
         try:
-            # Moving the file into my Folder
+            Moving the file into my Folder
             src = '/usr/local/bin/solc'
             dst = current_dir
             shutil.copy(src, dst)
             # Changing the name to have the platform and hash
             os.rename('solc',solc_tag)
             os.chdir(current_dir)
-            os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb"+ "54293fee9de2cd"
-            gh_release_create("alecsjo/Binary-Compiler", solc_tag, publish=True, name=solc_tag, asset_pattern=solc_tag) #Change the version name
+            os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb" + "54293fee9de2cd"
+            message = 'githubrelease release alecsjo/Binary-Compiler create '+ solc_tag + ' --publish --name '+ '"' + solc_tag + '"' +' '+ '"'+solc_tag+'"'
+            subprocess.call(message, shell = True)
+            # gh_release_create("alecsjo/Binary-Compiler", solc_tag, publish=True, name=solc_tag, asset_pattern=solc_tag) #Change the version name
         except:
             print('Some error occured while creating the release')
 
