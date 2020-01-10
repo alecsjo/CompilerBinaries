@@ -79,7 +79,8 @@ def compile_binaries(url):
         # This checks out each specific hash commit
         try:
             os.chdir(solidity_dir)
-            subprocess.call('git checkout -f ' + hash, shell = True)
+            # subprocess.call('git checkout -f ' + hash, shell = True)
+            os.system('git checkout -f ' + hash)
 
             print("CHECKPOINT 1 " + hash)
         except:
@@ -121,11 +122,15 @@ def compile_binaries(url):
         try:
             os.chdir(current_dir)
             # Stage the file
-            subprocess.call('git add FinishedCompilers.txt', shell = True)
+            # subprocess.call('git add FinishedCompilers.txt', shell = True)
+            os.system('git add FinishedCompilers.txt')
             # Add your commit
-            subprocess.call('git commit -m ',COMMIT_MESSAGE, shell = True)
+            # subprocess.call('git commit -m ',COMMIT_MESSAGE, shell = True)
+            os.system('git commit -m ',COMMIT_MESSAGE)
             # Push the new or update files
-            subprocess.call('git push origin workBranch', shell = True)
+            # subprocess.call('git push origin workBranch', shell = True)
+            os.system('git push origin workBranch')
+
         except:
             print('Some error occured while pushing the code')
             continue
@@ -141,7 +146,8 @@ def compile_binaries(url):
             os.chdir(current_dir)
             os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb" + "54293fee9de2cd"
             message = 'githubrelease release alecsjo/Binary-Compiler create '+ solc_tag + ' --publish --name '+ '"' + solc_tag + '"' +' '+ '"'+solc_tag+'"'
-            subprocess.call(message, shell = True)
+            # subprocess.call(message, shell = True)
+            os.system(message)
             # gh_release_create("alecsjo/Binary-Compiler", solc_tag, publish=True, name=solc_tag, asset_pattern=solc_tag) #Change the version name
         except:
             print('Some error occured while creating the release')
