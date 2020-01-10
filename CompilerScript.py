@@ -16,7 +16,7 @@ def compile_binaries(url):
     page = requests.get(url)
 
     # Gets the Operating System of the computer you're running on
-    current_platform = sys.platform()
+    current_platform = sys.platform
     print(current_platform)
     current_dir = os.getcwd()
     os.chdir(current_dir)
@@ -51,8 +51,8 @@ def compile_binaries(url):
     # Checks whether the Solidity Folder exists
     if not os.path.exists(solidity_dir):
         try:
-            subprocess.Popen(['git clone --recursive https://github.com/ethereum/solidity.git'], cwd=current_dir).communicate()
-            # os.system('git clone --recursive https://github.com/ethereum/solidity.git')
+            # subprocess.Popen(['git clone --recursive https://github.com/ethereum/solidity.git'], cwd=current_dir).communicate()
+            os.system('git clone --recursive https://github.com/ethereum/solidity.git')
         except:
             print("couldn't clone the solidity repository!")
 
@@ -100,7 +100,7 @@ def compile_binaries(url):
             continue
 
         print("CHECKPOINT 3 " + hash)
-        After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
+        # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
         os.chdir(current_dir)
         solc_tag = 'solc-'+current_platform+'-'+hash
         if hash not in finishedHashCommits.keys():
@@ -130,9 +130,9 @@ def compile_binaries(url):
             print('Some error occured while pushing the code')
             continue
 
-        5. Uses the github api to create a new release and upload the binary to the release page
+        # 5. Uses the github api to create a new release and upload the binary to the release page
         try:
-            Moving the file into my Folder
+            # Moving the file into my Folder
             src = '/usr/local/bin/solc'
             dst = current_dir
             shutil.copy(src, dst)
