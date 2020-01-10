@@ -16,7 +16,7 @@ def compile_binaries(url):
     page = requests.get(url)
 
     # Gets the Operating System of the computer you're running on
-    current_platform = sys.platform()
+    current_platform = sys.platform
     print(current_platform)
     current_dir = os.getcwd()
     os.chdir(current_dir)
@@ -51,8 +51,8 @@ def compile_binaries(url):
     # Checks whether the Solidity Folder exists
     if not os.path.exists(solidity_dir):
         try:
-            subprocess.Popen(['git clone --recursive https://github.com/ethereum/solidity.git'], cwd=current_dir).communicate()
-            # os.system('git clone --recursive https://github.com/ethereum/solidity.git')
+            # subprocess.Popen(['git clone --recursive https://github.com/ethereum/solidity.git'], cwd=current_dir).communicate()
+            os.system('git clone --recursive https://github.com/ethereum/solidity.git')
         except:
             print("couldn't clone the solidity repository!")
 
@@ -79,7 +79,8 @@ def compile_binaries(url):
         # This checks out each specific hash commit
         try:
             os.chdir(solidity_dir)
-            subprocess.call('git checkout -f ' + hash, shell = True)
+            # subprocess.call('git checkout -f ' + hash, shell = True)
+            os.system('git checkout -f ' + hash)
 
             print("CHECKPOINT 1 " + hash)
         except:
@@ -100,7 +101,7 @@ def compile_binaries(url):
             continue
 
         print("CHECKPOINT 3 " + hash)
-        After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
+        # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
         os.chdir(current_dir)
         solc_tag = 'solc-'+current_platform+'-'+hash
         if hash not in finishedHashCommits.keys():
@@ -121,18 +122,22 @@ def compile_binaries(url):
         try:
             os.chdir(current_dir)
             # Stage the file
-            subprocess.call('git add FinishedCompilers.txt', shell = True)
+            # subprocess.call('git add FinishedCompilers.txt', shell = True)
+            os.system('git add FinishedCompilers.txt')
             # Add your commit
-            subprocess.call('git commit -m ',COMMIT_MESSAGE, shell = True)
+            # subprocess.call('git commit -m ',COMMIT_MESSAGE, shell = True)
+            os.system('git commit -m ',COMMIT_MESSAGE)
             # Push the new or update files
-            subprocess.call('git push origin workBranch', shell = True)
+            # subprocess.call('git push origin workBranch', shell = True)
+            os.system('git push origin workBranch')
+
         except:
             print('Some error occured while pushing the code')
             continue
 
-        5. Uses the github api to create a new release and upload the binary to the release page
+        # 5. Uses the github api to create a new release and upload the binary to the release page
         try:
-            Moving the file into my Folder
+            # Moving the file into my Folder
             src = '/usr/local/bin/solc'
             dst = current_dir
             shutil.copy(src, dst)
@@ -141,7 +146,8 @@ def compile_binaries(url):
             os.chdir(current_dir)
             os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb" + "54293fee9de2cd"
             message = 'githubrelease release alecsjo/Binary-Compiler create '+ solc_tag + ' --publish --name '+ '"' + solc_tag + '"' +' '+ '"'+solc_tag+'"'
-            subprocess.call(message, shell = True)
+            # subprocess.call(message, shell = True)
+            os.system(message)
             # gh_release_create("alecsjo/Binary-Compiler", solc_tag, publish=True, name=solc_tag, asset_pattern=solc_tag) #Change the version name
         except:
             print('Some error occured while creating the release')
