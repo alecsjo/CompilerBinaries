@@ -104,16 +104,17 @@ def compile_binaries(url):
         # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
         os.chdir(current_dir)
         solc_tag = 'solc-'+current_platform+'-'+hash
+        repository = 'alecsjo/Binary-Compiler/releases/download/'
         if hash not in finishedHashCommits.keys():
             finishedHashCommits[hash] = {
                 "version": hashCommits[hash],
                 "full_version": hashCommits[hash] + "-" + hash,
                 "targets": {
-                    current_platform: "https://github.com/alecsjo/Binary-Compiler/releases/download/" + solc_tag + '/'+ solc_tag
+                    current_platform: "https://github.com/"+ repository + solc_tag + '/'+ solc_tag
                 }
             }
         else:
-            finishedHashCommits[hash]['targets'][current_platform] = "https://github.com/alecsjo/Binary-Compiler/releases/download/" + solc_tag + '/'+ solc_tag
+            finishedHashCommits[hash]['targets'][current_platform] = "https://github.com/"+ repository + solc_tag + '/'+ solc_tag
 
         with open('FinishedCompilers.txt', 'w') as f:
             json.dump(finishedHashCommits, f, ensure_ascii=False)
@@ -126,7 +127,7 @@ def compile_binaries(url):
             os.system('git add FinishedCompilers.txt')
             # Add your commit
             # subprocess.call('git commit -m ',COMMIT_MESSAGE, shell = True)
-            os.system('git commit -m ',COMMIT_MESSAGE)
+            os.system('git commit -m '+ COMMIT_MESSAGE)
             # Push the new or update files
             # subprocess.call('git push origin workBranch', shell = True)
             os.system('git push origin workBranch')
@@ -148,7 +149,6 @@ def compile_binaries(url):
             message = 'githubrelease release alecsjo/Binary-Compiler create '+ solc_tag + ' --publish --name '+ '"' + solc_tag + '"' +' '+ '"'+solc_tag+'"'
             # subprocess.call(message, shell = True)
             os.system(message)
-            # gh_release_create("alecsjo/Binary-Compiler", solc_tag, publish=True, name=solc_tag, asset_pattern=solc_tag) #Change the version name
         except:
             print('Some error occured while creating the release')
 
