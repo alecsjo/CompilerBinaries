@@ -93,7 +93,7 @@ def compile_binaries(url):
             if current_platform in {'linux','darwin'}:
                 subprocess.Popen(['./scripts/build.sh'], cwd=solidity_dir).communicate()
             else:
-                # This is for Windows
+                # This is for Windows!
                 subprocess.Popen(['cmake --build . --config Releasecmake --build . --config Release'], cwd=solidity_dir).communicate()
             print("CHECKPOINT 2 " + hash)
         except:
