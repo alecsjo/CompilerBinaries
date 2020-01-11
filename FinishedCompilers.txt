@@ -1,1 +1,1 @@
-{"d577a768": {"version": "v", "full_version": "v-d577a768", "targets": {"linux": "https://github.com/alecsjo/Binary-Compiler/releases/download/solc-linux-d577a768/solc-linux-d577a768"}}}
+{"d577a768": {"version": "v", "full_version": "v-d577a768", "targets": {"linux": "https://github.com/alecsjo/Binary-Compiler/releases/download/solc-linux-d577a768/solc-linux-d577a768"}}, "17158995": {"version": "v", "full_version": "v-17158995", "targets": {"linux": "https://github.com/alecsjo/Binary-Compiler/releases/download/solc-linux-17158995/solc-linux-17158995"}}}
