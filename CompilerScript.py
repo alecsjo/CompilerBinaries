@@ -130,7 +130,7 @@ def compile_binaries(url):
             os.system('git commit -m '+ COMMIT_MESSAGE)
             # Push the new or update files
             # subprocess.call('git push origin workBranch', shell = True)
-            os.system('git push origin workBranch')
+            os.system('git push origin master')
 
         except:
             print('Some error occured while pushing the code')
