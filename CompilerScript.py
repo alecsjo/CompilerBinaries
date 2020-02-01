@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 import requests
 import base64
@@ -79,10 +79,7 @@ def compile_binaries(url):
         # This checks out each specific hash commit
         try:
             os.chdir(solidity_dir)
-            # subprocess.call('git checkout -f ' + hash, shell = True)
-            subprocess.Popen(['git checkout -f ', hash], cwd=solidity_dir).communicate()
-
-            print("CHECKPOINT 1 " + hash)
+            subprocess.call('git checkout -f ' + hash, shell = True)
         except:
             print("couldn't checkout this hash:" + hash)
             continue
@@ -100,7 +97,6 @@ def compile_binaries(url):
             print("couldn't build binary for" + hash)
             continue
 
-        print("CHECKPOINT 3 " + hash)
         # After the binary is created, it's OS and hash are written to the JSON'd FinishedCompilers.txt so it's not built again
         os.chdir(current_dir)
         solc_tag = 'solc-'+current_platform+'-'+hash
@@ -148,8 +144,7 @@ def compile_binaries(url):
             # Changing the name to have the platform and hash
             os.rename('solc',solc_tag)
             os.chdir(current_dir)
-            # os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb" + "54293fee9de2cd"
-            # githubrelease --github-token d08f994212a61b332bb8e1c8bb54293fee9de2cd release alecsjo/Binary-Compiler create solc --publish --name “solctag” “solc”
+            os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb" + "54293fee9de2cd"
             message = 'githubrelease --github-token d08f994212a61b332bb8e1c8bb54293fee9de2cd release alecsjo/Binary-Compiler create '+ solc_tag + ' --publish --name '+ '"' + solc_tag + '"' +' '+ '"'+solc_tag+'"'
             # subprocess.call(message, shell = True)
             subprocess.Popen([message], cwd=current_dir).communicate()
