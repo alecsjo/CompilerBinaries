@@ -80,7 +80,7 @@ def compile_binaries(url):
         try:
             os.chdir(solidity_dir)
             # subprocess.call('git checkout -f ' + hash, shell = True)
-            os.system('git checkout -f ' + hash)
+            subprocess.Popen(['git checkout -f ', hash], cwd=solidity_dir).communicate()
 
             print("CHECKPOINT 1 " + hash)
         except:
@@ -124,14 +124,17 @@ def compile_binaries(url):
             os.chdir(current_dir)
             # Stage the file
             # subprocess.call('git add FinishedCompilers.txt', shell = True)
-            os.system('git add FinishedCompilers.txt')
+            # os.system('git add FinishedCompilers.txt')
+            subprocess.Popen(['git add FinishedCompilers.txt'], cwd=current_dir).communicate()
+
             # Add your commit
             # subprocess.call('git commit -m ',COMMIT_MESSAGE, shell = True)
-            os.system('git commit -m '+ COMMIT_MESSAGE)
+            subprocess.Popen(['git commit -m ', COMMIT_MESSAGE], cwd=current_dir).communicate()
+
             # Push the new or update files
             # subprocess.call('git push origin workBranch', shell = True)
-            os.system('git push origin workBranch')
-
+            # os.system('git push origin workBranch')
+            subprocess.Popen(['git push origin workBranch'], cwd=current_dir).communicate()
         except:
             print('Some error occured while pushing the code')
             continue
@@ -145,10 +148,12 @@ def compile_binaries(url):
             # Changing the name to have the platform and hash
             os.rename('solc',solc_tag)
             os.chdir(current_dir)
-            os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb" + "54293fee9de2cd"
-            message = 'githubrelease release alecsjo/Binary-Compiler create '+ solc_tag + ' --publish --name '+ '"' + solc_tag + '"' +' '+ '"'+solc_tag+'"'
+            # os.environ["GITHUB_TOKEN"] = "d08f994212" + "a61b332bb8e1c8bb" + "54293fee9de2cd"
+            # githubrelease --github-token d08f994212a61b332bb8e1c8bb54293fee9de2cd release alecsjo/Binary-Compiler create solc --publish --name “solctag” “solc”
+            message = 'githubrelease --github-token d08f994212a61b332bb8e1c8bb54293fee9de2cd release alecsjo/Binary-Compiler create '+ solc_tag + ' --publish --name '+ '"' + solc_tag + '"' +' '+ '"'+solc_tag+'"'
             # subprocess.call(message, shell = True)
-            os.system(message)
+            subprocess.Popen([message], cwd=current_dir).communicate()
+
         except:
             print('Some error occured while creating the release')
 
